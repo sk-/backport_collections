@@ -1,5 +1,6 @@
 
-import doctest
+import unittest2 as unittest
+import doctest  # operator is no longer needed
 import inspect
 from test import test_support
 from backport_collections import namedtuple, Counter, OrderedDict
@@ -8,13 +9,17 @@ import pickle, cPickle, copy
 from random import randrange, shuffle
 import keyword
 import re
+#import sets
 import sys
+#from collections import Hashable, Iterable, Iterator
+#from collections import Sized, Container, Callable
+#from collections import Set, MutableSet
 from collections import Mapping, MutableMapping
-
-import unittest2 as unittest
+#from collections import Sequence, MutableSequence
 
 TestNT = namedtuple('TestNT', 'x y z')    # type used for pickle tests
 
+# The name of the packages where changed to reflect the backport structure
 py273_named_tuple_pickle = '''\
 ccopy_reg
 _reconstructor
@@ -275,6 +280,7 @@ class TestCounter(unittest.TestCase):
                          [('a', 3), ('b', 2), ('c', 1)])
         self.assertEqual(c['b'], 2)
         self.assertEqual(c['z'], 0)
+        # Python 2.6 does not have test_support.check_py3k_warnings
         self.assertEqual(c.has_key('c'), True)
         self.assertEqual(c.has_key('z'), False)
         self.assertEqual(c.__contains__('c'), True)
@@ -693,7 +699,9 @@ import backport_collections
 
 def test_main(verbose=None):
     NamedTupleDocs = doctest.DocTestSuite(module=backport_collections)
-    test_classes = [TestNamedTuple, NamedTupleDocs, TestCounter,
+    # ABC tests where removed as they are not relevant
+    test_classes = [TestNamedTuple, NamedTupleDocs,
+                    TestCounter,
                     TestOrderedDict, GeneralMappingTests, SubclassMappingTests]
     test_support.run_unittest(*test_classes)
     test_support.run_doctest(backport_collections, verbose)
