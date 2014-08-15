@@ -7,7 +7,7 @@ install:
   - "pip install unittest2"
   - "pip install coverage"
   - "pip install coveralls"
-script: "coverage run --source=backport_collections test_collections.py && coverage run --source=backport_collections backport_collections.py"
+script: "coverage run --append --branch --source=backport_collections test_collections.py && coverage run --append --branch --include=backport_collections.py backport_collections.py"
 after_success:
   - "coverage report -m"
   - "coveralls"
