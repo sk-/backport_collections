@@ -10,7 +10,7 @@ backport_collections
 .. image:: https://coveralls.io/repos/sk-/backport_collections/badge.png?branch=master
     :target: https://coveralls.io/r/sk-/backport_collections?branch=master
 
-backport_collections is a backport of Python 2.7's ``collections`` module for Python 2.6 and 2.5.
+backport_collections is a backport of Python 2.7's ``collections`` module for Python 2.6.
 
 What is backported?
 -------------------
