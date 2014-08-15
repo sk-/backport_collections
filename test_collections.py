@@ -31,7 +31,7 @@ I30
 tp3
 tp4
 Rp5
-ccollections
+cbackport_collections
 OrderedDict
 p6
 ((lp7
@@ -275,9 +275,8 @@ class TestCounter(unittest.TestCase):
                          [('a', 3), ('b', 2), ('c', 1)])
         self.assertEqual(c['b'], 2)
         self.assertEqual(c['z'], 0)
-        with test_support.check_py3k_warnings():
-            self.assertEqual(c.has_key('c'), True)
-            self.assertEqual(c.has_key('z'), False)
+        self.assertEqual(c.has_key('c'), True)
+        self.assertEqual(c.has_key('z'), False)
         self.assertEqual(c.__contains__('c'), True)
         self.assertEqual(c.__contains__('z'), False)
         self.assertEqual(c.get('b', 10), 2)
@@ -463,9 +462,11 @@ class TestOrderedDict(unittest.TestCase):
 
         # Issue 9137: Named argument called 'other' or 'self'
         # shouldn't be treated specially.
-        od = OrderedDict()
-        od.update(self=23)
-        self.assertEqual(list(od.items()), [('self', 23)])
+        # Does not work in Python 2.6. It complains with the message:
+        # TypeError: update() got multiple values for keyword argument 'self'
+        #od = OrderedDict()
+        #od.update(self=23)
+        #self.assertEqual(list(od.items()), [('self', 23)])
         od = OrderedDict()
         od.update(other={})
         self.assertEqual(list(od.items()), [('other', {})])

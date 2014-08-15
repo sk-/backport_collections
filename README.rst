@@ -27,6 +27,12 @@ Example::
     from backport_collections import OrderedDict
     from backport_collections import namedtuple
 
+Known Issues
+------------
+
+* In Python 2.6 Issue 9137 is not solved as it complains if it gets a keyword
+argument named ``self``. The error is ``TypeError: update() got multiple values for keyword argument 'self'``.
+
 License
 -------
 
