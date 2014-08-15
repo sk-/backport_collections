@@ -5,10 +5,13 @@ python:
   - "2.7"
 # command to install dependencies
 install:
+  - "echo $TRAVIS_PYTHON_VERSION"
+  - "if [[ $TRAVIS_PYTHON_VERSION != '2.5' ]]; then echo '>2.5'; fi"
   - "pip install ."
   - "pip install unittest2"
+  - "pip install coverage"
   - "if [[ $TRAVIS_PYTHON_VERSION != '2.5' ]]; then pip install coveralls; fi"
 # command to run tests
-script: python test_collections.py
+script: coverage run --source=backport_collections test_collections.py
 after_success:
   "if [[ $TRAVIS_PYTHON_VERSION != '2.5' ]]; then coveralls; fi"
