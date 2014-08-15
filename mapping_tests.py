@@ -1,6 +1,7 @@
 # tests common to dict and UserDict
 import unittest2 as unittest
 import UserDict
+#import test_support is not needed as check_py3k_warnings is not supported in 2.6
 
 
 class BasicTestMappingProtocol(unittest.TestCase):
@@ -60,6 +61,7 @@ class BasicTestMappingProtocol(unittest.TestCase):
         for k in self.other:
             self.assertNotIn(k, d)
         #has_key
+        # test_support.check_py3k_warnings is not supported in Python 2.6
         for k in self.reference:
             self.assertTrue(d.has_key(k))
         for k in self.other:
