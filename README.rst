@@ -32,6 +32,8 @@ Known Issues
 
 * In Python 2.6 Issue 9137 is not solved as it complains if it gets a keyword
 argument named ``self``. The error is ``TypeError: update() got multiple values for keyword argument 'self'``.
+Additionally the keyword argument cannot be called ``other`` either as it will think it is the full dict. No error is raised in this case.
+
 
 License
 -------

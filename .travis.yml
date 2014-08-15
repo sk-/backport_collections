@@ -7,8 +7,8 @@ python:
 install:
   - "pip install ."
   - "pip install unittest2"
-  - "pip install coveralls"
+  - "if [[ $TRAVIS_PYTHON_VERSION != '2.5' ]]; then pip install coveralls; fi"
 # command to run tests
 script: python test_collections.py
 after_success:
-  coveralls
+  "if [[ $TRAVIS_PYTHON_VERSION != '2.5' ]]; then coveralls; fi"
