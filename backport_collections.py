@@ -1,9 +1,9 @@
 __all__ = ['Counter', 'deque', 'defaultdict', 'namedtuple', 'OrderedDict']
 # For bootstrapping reasons, the collection ABCs are defined in _abcoll.py.
 # They should however be considered an integral part of collections.py.
-from _abcoll import *
-import _abcoll
-__all__ += _abcoll.__all__
+from backport_abcoll import *
+import backport_abcoll
+__all__ += backport_abcoll.__all__
 
 from _collections import defaultdict
 from collections import deque as _deque

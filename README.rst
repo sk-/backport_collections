@@ -37,9 +37,7 @@ Known Issues
   argument named ``self``. The error is ``TypeError: update() got multiple values for keyword argument 'self'``.
   Additionally the keyword argument cannot be called ``other`` either as it will think it is the full dict. No error is raised in this case.
 
-* In Python 2.6 Issue 16373 is not fixed: Recursion error comparing comparable and noncomparable
-
-* In Python 2.6 Issue 8743 is not fixed: Set interoperability with real sets
+* In Python 2.6 Issue 8743 is not fully fixed: Set interoperability with real sets
 
 
 License
