@@ -19,7 +19,7 @@ import UserDict
 import re
 import time
 import struct
-import sysconfig
+#import sysconfig
 try:
     import thread
 except ImportError:
@@ -1345,12 +1345,12 @@ def run_unittest(*classes):
 #=======================================================================
 # Check for the presence of docstrings.
 
-HAVE_DOCSTRINGS = (check_impl_detail(cpython=False) or
-                   sys.platform == 'win32' or
-                   sysconfig.get_config_var('WITH_DOC_STRINGS'))
+#HAVE_DOCSTRINGS = (check_impl_detail(cpython=False) or
+#                   sys.platform == 'win32' or
+#                   sysconfig.get_config_var('WITH_DOC_STRINGS'))
 
-requires_docstrings = unittest.skipUnless(HAVE_DOCSTRINGS,
-                                          "test requires docstrings")
+#requires_docstrings = unittest.skipUnless(HAVE_DOCSTRINGS,
+#                                          "test requires docstrings")
 
 
 #=======================================================================
