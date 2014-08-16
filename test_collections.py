@@ -1,6 +1,6 @@
 
 import unittest2 as unittest
-import doctest  # operator is no longer needed
+import doctest, operator
 import inspect
 import test_support
 from backport_collections import namedtuple, Counter, OrderedDict
@@ -9,13 +9,13 @@ import pickle, cPickle, copy
 from random import randrange, shuffle
 import keyword
 import re
-#import sets
+import sets
 import sys
-#from collections import Hashable, Iterable, Iterator
-#from collections import Sized, Container, Callable
-#from collections import Set, MutableSet
-from collections import Mapping, MutableMapping
-#from collections import Sequence, MutableSequence
+from backport_collections import Hashable, Iterable, Iterator
+from backport_collections import Sized, Container, Callable
+from backport_collections import Set, MutableSet
+from backport_collections import Mapping, MutableMapping
+from backport_collections import Sequence, MutableSequence
 
 TestNT = namedtuple('TestNT', 'x y z')    # type used for pickle tests
 
@@ -260,6 +260,578 @@ class TestNamedTuple(unittest.TestCase):
         pt = pickle.loads(py273_named_tuple_pickle)
         self.assertEqual(pt.x, 10)
 
+class ABCTestCase(unittest.TestCase):
+
+    def validate_abstract_methods(self, abc, *names):
+        methodstubs = dict.fromkeys(names, lambda s, *args: 0)
+
+        # everything should work will all required methods are present
+        C = type('C', (abc,), methodstubs)
+        C()
+
+        # instantiation should fail if a required method is missing
+        for name in names:
+            stubs = methodstubs.copy()
+            del stubs[name]
+            C = type('C', (abc,), stubs)
+            self.assertRaises(TypeError, C, name)
+
+    def validate_isinstance(self, abc, name):
+        stub = lambda s, *args: 0
+
+        # new-style class
+        C = type('C', (object,), {name: stub})
+        self.assertIsInstance(C(), abc)
+        self.assertTrue(issubclass(C, abc))
+        # old-style class
+        class C: pass
+        setattr(C, name, stub)
+        self.assertIsInstance(C(), abc)
+        self.assertTrue(issubclass(C, abc))
+
+        # new-style class
+        C = type('C', (object,), {'__hash__': None})
+        self.assertNotIsInstance(C(), abc)
+        self.assertFalse(issubclass(C, abc))
+        # old-style class
+        class C: pass
+        self.assertNotIsInstance(C(), abc)
+        self.assertFalse(issubclass(C, abc))
+
+    def validate_comparison(self, instance):
+        ops = ['lt', 'gt', 'le', 'ge', 'ne', 'or', 'and', 'xor', 'sub']
+        operators = {}
+        for op in ops:
+            name = '__' + op + '__'
+            operators[name] = getattr(operator, name)
+
+        class Other:
+            def __init__(self):
+                self.right_side = False
+            def __eq__(self, other):
+                self.right_side = True
+                return True
+            __lt__ = __eq__
+            __gt__ = __eq__
+            __le__ = __eq__
+            __ge__ = __eq__
+            __ne__ = __eq__
+            __ror__ = __eq__
+            __rand__ = __eq__
+            __rxor__ = __eq__
+            __rsub__ = __eq__
+
+        for name, op in operators.items():
+            if not hasattr(instance, name):
+                continue
+            other = Other()
+            op(instance, other)
+            self.assertTrue(other.right_side,'Right side not called for %s.%s'
+                            % (type(instance), name))
+
+class TestOneTrickPonyABCs(ABCTestCase):
+
+    def test_Hashable(self):
+        # Check some non-hashables
+        non_samples = [list(), set(), dict()]
+        for x in non_samples:
+            self.assertNotIsInstance(x, Hashable)
+            self.assertFalse(issubclass(type(x), Hashable), repr(type(x)))
+        # Check some hashables
+        samples = [None,
+                   int(), float(), complex(),
+                   str(),
+                   tuple(), frozenset(),
+                   int, list, object, type,
+                   ]
+        for x in samples:
+            self.assertIsInstance(x, Hashable)
+            self.assertTrue(issubclass(type(x), Hashable), repr(type(x)))
+        self.assertRaises(TypeError, Hashable)
+        # Check direct subclassing
+        class H(Hashable):
+            def __hash__(self):
+                return super(H, self).__hash__()
+            __eq__ = Hashable.__eq__ # Silence Py3k warning
+        self.assertEqual(hash(H()), 0)
+        self.assertFalse(issubclass(int, H))
+        self.validate_abstract_methods(Hashable, '__hash__')
+        self.validate_isinstance(Hashable, '__hash__')
+
+    def test_Iterable(self):
+        # Check some non-iterables
+        non_samples = [None, 42, 3.14, 1j]
+        for x in non_samples:
+            self.assertNotIsInstance(x, Iterable)
+            self.assertFalse(issubclass(type(x), Iterable), repr(type(x)))
+        # Check some iterables
+        samples = [str(),
+                   tuple(), list(), set(), frozenset(), dict(),
+                   dict().keys(), dict().items(), dict().values(),
+                   (lambda: (yield))(),
+                   (x for x in []),
+                   ]
+        for x in samples:
+            self.assertIsInstance(x, Iterable)
+            self.assertTrue(issubclass(type(x), Iterable), repr(type(x)))
+        # Check direct subclassing
+        class I(Iterable):
+            def __iter__(self):
+                return super(I, self).__iter__()
+        self.assertEqual(list(I()), [])
+        self.assertFalse(issubclass(str, I))
+        self.validate_abstract_methods(Iterable, '__iter__')
+        self.validate_isinstance(Iterable, '__iter__')
+
+    def test_Iterator(self):
+        non_samples = [None, 42, 3.14, 1j, "".encode('ascii'), "", (), [],
+            {}, set()]
+        for x in non_samples:
+            self.assertNotIsInstance(x, Iterator)
+            self.assertFalse(issubclass(type(x), Iterator), repr(type(x)))
+        samples = [iter(str()),
+                   iter(tuple()), iter(list()), iter(dict()),
+                   iter(set()), iter(frozenset()),
+                   iter(dict().keys()), iter(dict().items()),
+                   iter(dict().values()),
+                   (lambda: (yield))(),
+                   (x for x in []),
+                   ]
+        for x in samples:
+            self.assertIsInstance(x, Iterator)
+            self.assertTrue(issubclass(type(x), Iterator), repr(type(x)))
+        self.validate_abstract_methods(Iterator, 'next', '__iter__')
+
+        # Issue 10565
+        class NextOnly:
+            def __next__(self):
+                yield 1
+                raise StopIteration
+        self.assertNotIsInstance(NextOnly(), Iterator)
+        class NextOnlyNew(object):
+            def __next__(self):
+                yield 1
+                raise StopIteration
+        self.assertNotIsInstance(NextOnlyNew(), Iterator)
+
+    def test_Sized(self):
+        non_samples = [None, 42, 3.14, 1j,
+                       (lambda: (yield))(),
+                       (x for x in []),
+                       ]
+        for x in non_samples:
+            self.assertNotIsInstance(x, Sized)
+            self.assertFalse(issubclass(type(x), Sized), repr(type(x)))
+        samples = [str(),
+                   tuple(), list(), set(), frozenset(), dict(),
+                   dict().keys(), dict().items(), dict().values(),
+                   ]
+        for x in samples:
+            self.assertIsInstance(x, Sized)
+            self.assertTrue(issubclass(type(x), Sized), repr(type(x)))
+        self.validate_abstract_methods(Sized, '__len__')
+        self.validate_isinstance(Sized, '__len__')
+
+    def test_Container(self):
+        non_samples = [None, 42, 3.14, 1j,
+                       (lambda: (yield))(),
+                       (x for x in []),
+                       ]
+        for x in non_samples:
+            self.assertNotIsInstance(x, Container)
+            self.assertFalse(issubclass(type(x), Container), repr(type(x)))
+        samples = [str(),
+                   tuple(), list(), set(), frozenset(), dict(),
+                   dict().keys(), dict().items(),
+                   ]
+        for x in samples:
+            self.assertIsInstance(x, Container)
+            self.assertTrue(issubclass(type(x), Container), repr(type(x)))
+        self.validate_abstract_methods(Container, '__contains__')
+        self.validate_isinstance(Container, '__contains__')
+
+    def test_Callable(self):
+        non_samples = [None, 42, 3.14, 1j,
+                       "", "".encode('ascii'), (), [], {}, set(),
+                       (lambda: (yield))(),
+                       (x for x in []),
+                       ]
+        for x in non_samples:
+            self.assertNotIsInstance(x, Callable)
+            self.assertFalse(issubclass(type(x), Callable), repr(type(x)))
+        samples = [lambda: None,
+                   type, int, object,
+                   len,
+                   list.append, [].append,
+                   ]
+        for x in samples:
+            self.assertIsInstance(x, Callable)
+            self.assertTrue(issubclass(type(x), Callable), repr(type(x)))
+        self.validate_abstract_methods(Callable, '__call__')
+        self.validate_isinstance(Callable, '__call__')
+
+    def test_direct_subclassing(self):
+        for B in Hashable, Iterable, Iterator, Sized, Container, Callable:
+            class C(B):
+                pass
+            self.assertTrue(issubclass(C, B))
+            self.assertFalse(issubclass(int, C))
+
+    def test_registration(self):
+        for B in Hashable, Iterable, Iterator, Sized, Container, Callable:
+            class C:
+                __metaclass__ = type
+                __hash__ = None  # Make sure it isn't hashable by default
+            self.assertFalse(issubclass(C, B), B.__name__)
+            B.register(C)
+            self.assertTrue(issubclass(C, B))
+
+class WithSet(MutableSet):
+
+    def __init__(self, it=()):
+        self.data = set(it)
+
+    def __len__(self):
+        return len(self.data)
+
+    def __iter__(self):
+        return iter(self.data)
+
+    def __contains__(self, item):
+        return item in self.data
+
+    def add(self, item):
+        self.data.add(item)
+
+    def discard(self, item):
+        self.data.discard(item)
+
+class TestCollectionABCs(ABCTestCase):
+
+    # XXX For now, we only test some virtual inheritance properties.
+    # We should also test the proper behavior of the collection ABCs
+    # as real base classes or mix-in classes.
+
+    def test_Set(self):
+        for sample in [set, frozenset]:
+            self.assertIsInstance(sample(), Set)
+            self.assertTrue(issubclass(sample, Set))
+        self.validate_abstract_methods(Set, '__contains__', '__iter__', '__len__')
+        class MySet(Set):
+            def __contains__(self, x):
+                return False
+            def __len__(self):
+                return 0
+            def __iter__(self):
+                return iter([])
+        self.validate_comparison(MySet())
+
+    def test_hash_Set(self):
+        class OneTwoThreeSet(Set):
+            def __init__(self):
+                self.contents = [1, 2, 3]
+            def __contains__(self, x):
+                return x in self.contents
+            def __len__(self):
+                return len(self.contents)
+            def __iter__(self):
+                return iter(self.contents)
+            def __hash__(self):
+                return self._hash()
+        a, b = OneTwoThreeSet(), OneTwoThreeSet()
+        self.assertTrue(hash(a) == hash(b))
+
+    def test_MutableSet(self):
+        self.assertIsInstance(set(), MutableSet)
+        self.assertTrue(issubclass(set, MutableSet))
+        self.assertNotIsInstance(frozenset(), MutableSet)
+        self.assertFalse(issubclass(frozenset, MutableSet))
+        self.validate_abstract_methods(MutableSet, '__contains__', '__iter__', '__len__',
+            'add', 'discard')
+
+    def test_issue_5647(self):
+        # MutableSet.__iand__ mutated the set during iteration
+        s = WithSet('abcd')
+        s &= WithSet('cdef')            # This used to fail
+        self.assertEqual(set(s), set('cd'))
+
+    def test_issue_4920(self):
+        # MutableSet.pop() method did not work
+        class MySet(collections.MutableSet):
+            __slots__=['__s']
+            def __init__(self,items=None):
+                if items is None:
+                    items=[]
+                self.__s=set(items)
+            def __contains__(self,v):
+                return v in self.__s
+            def __iter__(self):
+                return iter(self.__s)
+            def __len__(self):
+                return len(self.__s)
+            def add(self,v):
+                result=v not in self.__s
+                self.__s.add(v)
+                return result
+            def discard(self,v):
+                result=v in self.__s
+                self.__s.discard(v)
+                return result
+            def __repr__(self):
+                return "MySet(%s)" % repr(list(self))
+        s = MySet([5,43,2,1])
+        self.assertEqual(s.pop(), 1)
+
+    def test_issue8750(self):
+        empty = WithSet()
+        full = WithSet(range(10))
+        s = WithSet(full)
+        s -= s
+        self.assertEqual(s, empty)
+        s = WithSet(full)
+        s ^= s
+        self.assertEqual(s, empty)
+        s = WithSet(full)
+        s &= s
+        self.assertEqual(s, full)
+        s |= s
+        self.assertEqual(s, full)
+
+    def test_issue16373(self):
+        # Recursion error comparing comparable and noncomparable
+        # Set instances
+        class MyComparableSet(Set):
+            def __contains__(self, x):
+                return False
+            def __len__(self):
+                return 0
+            def __iter__(self):
+                return iter([])
+        class MyNonComparableSet(Set):
+            def __contains__(self, x):
+                return False
+            def __len__(self):
+                return 0
+            def __iter__(self):
+                return iter([])
+            def __le__(self, x):
+                return NotImplemented
+            def __lt__(self, x):
+                return NotImplemented
+
+        cs = MyComparableSet()
+        ncs = MyNonComparableSet()
+
+        # Run all the variants to make sure they don't mutually recurse
+        ncs < cs
+        ncs <= cs
+        ncs > cs
+        ncs >= cs
+        cs < ncs
+        cs <= ncs
+        cs > ncs
+        cs >= ncs
+
+    def assertSameSet(self, s1, s2):
+        # coerce both to a real set then check equality
+        self.assertEqual(set(s1), set(s2))
+
+    def test_Set_interoperability_with_real_sets(self):
+        # Issue: 8743
+        class ListSet(Set):
+            def __init__(self, elements=()):
+                self.data = []
+                for elem in elements:
+                    if elem not in self.data:
+                        self.data.append(elem)
+            def __contains__(self, elem):
+                return elem in self.data
+            def __iter__(self):
+                return iter(self.data)
+            def __len__(self):
+                return len(self.data)
+            def __repr__(self):
+                return 'Set({!r})'.format(self.data)
+
+        r1 = set('abc')
+        r2 = set('bcd')
+        r3 = set('abcde')
+        f1 = ListSet('abc')
+        f2 = ListSet('bcd')
+        f3 = ListSet('abcde')
+        l1 = list('abccba')
+        l2 = list('bcddcb')
+        l3 = list('abcdeedcba')
+        p1 = sets.Set('abc')
+        p2 = sets.Set('bcd')
+        p3 = sets.Set('abcde')
+
+        target = r1 & r2
+        self.assertSameSet(f1 & f2, target)
+        self.assertSameSet(f1 & r2, target)
+        self.assertSameSet(r2 & f1, target)
+        self.assertSameSet(f1 & p2, target)
+        self.assertSameSet(p2 & f1, target)
+        self.assertSameSet(f1 & l2, target)
+
+        target = r1 | r2
+        self.assertSameSet(f1 | f2, target)
+        self.assertSameSet(f1 | r2, target)
+        self.assertSameSet(r2 | f1, target)
+        self.assertSameSet(f1 | p2, target)
+        self.assertSameSet(p2 | f1, target)
+        self.assertSameSet(f1 | l2, target)
+
+        fwd_target = r1 - r2
+        rev_target = r2 - r1
+        self.assertSameSet(f1 - f2, fwd_target)
+        self.assertSameSet(f2 - f1, rev_target)
+        self.assertSameSet(f1 - r2, fwd_target)
+        self.assertSameSet(f2 - r1, rev_target)
+        self.assertSameSet(r1 - f2, fwd_target)
+        self.assertSameSet(r2 - f1, rev_target)
+        self.assertSameSet(f1 - p2, fwd_target)
+        self.assertSameSet(f2 - p1, rev_target)
+        self.assertSameSet(p1 - f2, fwd_target)
+        self.assertSameSet(p2 - f1, rev_target)
+        self.assertSameSet(f1 - l2, fwd_target)
+        self.assertSameSet(f2 - l1, rev_target)
+
+        target = r1 ^ r2
+        self.assertSameSet(f1 ^ f2, target)
+        self.assertSameSet(f1 ^ r2, target)
+        self.assertSameSet(r2 ^ f1, target)
+        self.assertSameSet(f1 ^ p2, target)
+        self.assertSameSet(p2 ^ f1, target)
+        self.assertSameSet(f1 ^ l2, target)
+
+        # proper subset
+        self.assertTrue(f1 < f3)
+        self.assertFalse(f1 < f1)
+        self.assertFalse(f1 < f2)
+        #self.assertTrue(r1 < f3)
+        #self.assertFalse(r1 < f1)
+        #self.assertFalse(r1 < f2)
+        self.assertTrue(r1 < r3)
+        self.assertFalse(r1 < r1)
+        self.assertFalse(r1 < r2)
+        # python 2 only, cross-type compares will succeed
+        f1 < l3
+        f1 < l1
+        f1 < l2
+
+        # any subset
+        self.assertTrue(f1 <= f3)
+        self.assertTrue(f1 <= f1)
+        self.assertFalse(f1 <= f2)
+        #self.assertTrue(r1 <= f3)
+        #self.assertTrue(r1 <= f1)
+        #self.assertFalse(r1 <= f2)
+        self.assertTrue(r1 <= r3)
+        self.assertTrue(r1 <= r1)
+        self.assertFalse(r1 <= r2)
+        # python 2 only, cross-type compares will succeed
+        f1 <= l3
+        f1 <= l1
+        f1 <= l2
+
+        # proper superset
+        self.assertTrue(f3 > f1)
+        self.assertFalse(f1 > f1)
+        self.assertFalse(f2 > f1)
+        self.assertTrue(r3 > r1)
+        self.assertFalse(f1 > r1)
+        self.assertFalse(f2 > r1)
+        self.assertTrue(r3 > r1)
+        self.assertFalse(r1 > r1)
+        self.assertFalse(r2 > r1)
+        # python 2 only, cross-type compares will succeed
+        f1 > l3
+        f1 > l1
+        f1 > l2
+
+        # any superset
+        self.assertTrue(f3 >= f1)
+        self.assertTrue(f1 >= f1)
+        self.assertFalse(f2 >= f1)
+        self.assertTrue(r3 >= r1)
+        self.assertTrue(f1 >= r1)
+        self.assertFalse(f2 >= r1)
+        self.assertTrue(r3 >= r1)
+        self.assertTrue(r1 >= r1)
+        self.assertFalse(r2 >= r1)
+        # python 2 only, cross-type compares will succeed
+        f1 >= l3
+        f1 >=l1
+        f1 >= l2
+
+        # equality
+        self.assertTrue(f1 == f1)
+        #self.assertTrue(r1 == f1)
+        self.assertTrue(f1 == r1)
+        self.assertFalse(f1 == f3)
+        self.assertFalse(r1 == f3)
+        self.assertFalse(f1 == r3)
+        # python 2 only, cross-type compares will succeed
+        f1 == l3
+        f1 == l1
+        f1 == l2
+
+        # inequality
+        self.assertFalse(f1 != f1)
+        #self.assertFalse(r1 != f1)
+        self.assertFalse(f1 != r1)
+        self.assertTrue(f1 != f3)
+        self.assertTrue(r1 != f3)
+        self.assertTrue(f1 != r3)
+        # python 2 only, cross-type compares will succeed
+        f1 != l3
+        f1 != l1
+        f1 != l2
+
+    def test_Mapping(self):
+        for sample in [dict]:
+            self.assertIsInstance(sample(), Mapping)
+            self.assertTrue(issubclass(sample, Mapping))
+        self.validate_abstract_methods(Mapping, '__contains__', '__iter__', '__len__',
+            '__getitem__')
+        class MyMapping(collections.Mapping):
+            def __len__(self):
+                return 0
+            def __getitem__(self, i):
+                raise IndexError
+            def __iter__(self):
+                return iter(())
+        self.validate_comparison(MyMapping())
+
+    def test_MutableMapping(self):
+        for sample in [dict]:
+            self.assertIsInstance(sample(), MutableMapping)
+            self.assertTrue(issubclass(sample, MutableMapping))
+        self.validate_abstract_methods(MutableMapping, '__contains__', '__iter__', '__len__',
+            '__getitem__', '__setitem__', '__delitem__')
+
+    def test_Sequence(self):
+        for sample in [tuple, list, str]:
+            self.assertIsInstance(sample(), Sequence)
+            self.assertTrue(issubclass(sample, Sequence))
+        self.assertTrue(issubclass(basestring, Sequence))
+        self.assertIsInstance(range(10), Sequence)
+        self.assertTrue(issubclass(xrange, Sequence))
+        self.assertTrue(issubclass(str, Sequence))
+        self.validate_abstract_methods(Sequence, '__contains__', '__iter__', '__len__',
+            '__getitem__')
+
+    def test_MutableSequence(self):
+        for sample in [tuple, str]:
+            self.assertNotIsInstance(sample(), MutableSequence)
+            self.assertFalse(issubclass(sample, MutableSequence))
+        for sample in [list]:
+            self.assertIsInstance(sample(), MutableSequence)
+            self.assertTrue(issubclass(sample, MutableSequence))
+        self.assertFalse(issubclass(basestring, MutableSequence))
+        self.validate_abstract_methods(MutableSequence, '__contains__', '__iter__',
+            '__len__', '__getitem__', '__setitem__', '__delitem__', 'insert')
 
 class TestCounter(unittest.TestCase):
 
@@ -695,16 +1267,15 @@ class SubclassMappingTests(mapping_tests.BasicTestMappingProtocol):
         d = self._empty_mapping()
         self.assertRaises(KeyError, d.popitem)
 
-import backport_collections
+import backport_collections as collections
 
 def test_main(verbose=None):
-    NamedTupleDocs = doctest.DocTestSuite(module=backport_collections)
-    # ABC tests where removed as they are not relevant
-    test_classes = [TestNamedTuple, NamedTupleDocs,
-                    TestCounter,
+    NamedTupleDocs = doctest.DocTestSuite(module=collections)
+    test_classes = [TestNamedTuple, NamedTupleDocs, TestOneTrickPonyABCs,
+                    TestCollectionABCs, TestCounter,
                     TestOrderedDict, GeneralMappingTests, SubclassMappingTests]
     test_support.run_unittest(*test_classes)
-    test_support.run_doctest(backport_collections, verbose)
+    test_support.run_doctest(collections, verbose)
 
 if __name__ == "__main__":
     test_main(verbose=True)

@@ -1,14 +1,11 @@
-# Expose only those structures defined in this file
-__all__ = ['Counter', 'deque', 'namedtuple', 'OrderedDict']
+__all__ = ['Counter', 'deque', 'defaultdict', 'namedtuple', 'OrderedDict']
+# For bootstrapping reasons, the collection ABCs are defined in _abcoll.py.
+# They should however be considered an integral part of collections.py.
+from backport_abcoll import *
+import backport_abcoll
+__all__ += backport_abcoll.__all__
 
-#__all__ = ['Counter', 'deque', 'defaultdict', 'namedtuple', 'OrderedDict']
-## For bootstrapping reasons, the collection ABCs are defined in _abcoll.py.
-## They should however be considered an integral part of collections.py.
-from _abcoll import *
-#import _abcoll
-#__all__ += _abcoll.__all__
-
-#from _collections import deque, defaultdict
+from _collections import defaultdict
 from collections import deque as _deque
 from operator import itemgetter as _itemgetter, eq as _eq
 from keyword import iskeyword as _iskeyword

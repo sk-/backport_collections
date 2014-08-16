@@ -8,7 +8,7 @@ setup(
     long_description=open('README.rst').read(),
     maintainer='Sebastian Kreft',
     url='http://github.com/sk-/backport_collections',
-    py_modules=['backport_collections'],
+    py_modules=['backport_collections', 'backport_abcoll'],
     tests_require=['unittest2', 'nose'],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
