@@ -13,7 +13,7 @@ script: >
           coverage run --append --branch --include=backport_collections.py backport_collections.py &&
           python setup.py sdist &&
           pip install --upgrade dist/backport_collections-*.tar.gz &&
-          cd /tmp && python -m backport_collections
+          cd /tmp && python -m backport_collections && cd -
 after_success:
   - "coverage report -m"
   - "coveralls"
