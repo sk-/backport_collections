@@ -14,7 +14,7 @@ import platform
 import shutil
 import warnings
 import unittest
-import importlib
+#import importlib
 import UserDict
 import re
 import time
@@ -78,7 +78,7 @@ def import_module(name, deprecated=False):
     will be suppressed."""
     with _ignore_deprecated_imports(deprecated):
         try:
-            return importlib.import_module(name)
+            return __import__(name, level=0)
         except ImportError, msg:
             raise unittest.SkipTest(str(msg))
 
@@ -136,7 +136,7 @@ def import_fresh_module(name, fresh=(), blocked=(), deprecated=False):
             for blocked_name in blocked:
                 if not _save_and_block_module(blocked_name, orig_modules):
                     names_to_remove.append(blocked_name)
-            fresh_module = importlib.import_module(name)
+            fresh_module = __import__(name, level=0)
         except ImportError:
             fresh_module = None
         finally:
