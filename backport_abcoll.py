@@ -550,7 +550,7 @@ class MutableMapping(Mapping):
         '''
         if len(args) > 2:
             raise TypeError("update() takes at most 2 positional "
-                            "arguments ({} given)".format(len(args)))
+                            "arguments ({args} given)".format(args=len(args)))
         elif not args:
             raise TypeError("update() takes at least 1 argument (0 given)")
         self = args[0]
