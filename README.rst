@@ -16,6 +16,8 @@ What is backported?
 -------------------
 
 ``Counter``, ``deque``, ``OrderedDict`` and ``namedtuple`` are backported.
+The rest of the members of the ``collections`` module are still exposed. Note
+though that some ``ABC`` classes are slighlty different (see known issues below).
 
 Usage
 -----
@@ -31,9 +33,13 @@ Example::
 Known Issues
 ------------
 
-* In Python 2.6 Issue 9137 is not solved as it complains if it gets a keyword
+* In Python 2.6 Issue 9137 is not fixed as it complains if it gets a keyword
   argument named ``self``. The error is ``TypeError: update() got multiple values for keyword argument 'self'``.
   Additionally the keyword argument cannot be called ``other`` either as it will think it is the full dict. No error is raised in this case.
+
+* In Python 2.6 Issue 16373 is not fixed: Recursion error comparing comparable and noncomparable
+
+* In Python 2.6 Issue 8743 is not fixed: Set interoperability with real sets
 
 
 License
