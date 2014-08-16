@@ -15,7 +15,7 @@ backport_collections is a backport of Python 2.7's ``collections`` module for Py
 What is backported?
 -------------------
 
-``Counter``, ``OrderedDict`` and ``namedtuple`` are backported.
+``Counter``, ``deque``, ``OrderedDict`` and ``namedtuple`` are backported.
 
 Usage
 -----
@@ -24,6 +24,7 @@ To use it just import the desired classes from the module ``backport_collections
 Example::
 
     from backport_collections import Counter
+    from backport_collections import deque
     from backport_collections import OrderedDict
     from backport_collections import namedtuple
 
@@ -31,8 +32,8 @@ Known Issues
 ------------
 
 * In Python 2.6 Issue 9137 is not solved as it complains if it gets a keyword
-argument named ``self``. The error is ``TypeError: update() got multiple values for keyword argument 'self'``.
-Additionally the keyword argument cannot be called ``other`` either as it will think it is the full dict. No error is raised in this case.
+  argument named ``self``. The error is ``TypeError: update() got multiple values for keyword argument 'self'``.
+  Additionally the keyword argument cannot be called ``other`` either as it will think it is the full dict. No error is raised in this case.
 
 
 License

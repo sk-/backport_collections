@@ -7,7 +7,11 @@ install:
   - "pip install unittest2"
   - "pip install coverage"
   - "pip install coveralls"
-script: "coverage run --append --branch --source=backport_collections test_collections.py && coverage run --append --branch --include=backport_collections.py backport_collections.py"
+script: >
+		  coverage run --append --branch --source=backport_collections test_collections.py &&
+		  coverage run --append --branch --source=backport_collections test_deque.py &&
+		  coverage run --append --branch --include=backport_collections.py backport_collections.py &&
+		  python setup.py sdist && pip install --upgrade dist/backport_collections-*.tar.gz
 after_success:
   - "coverage report -m"
   - "coveralls"
