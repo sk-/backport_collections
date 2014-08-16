@@ -1,5 +1,5 @@
 # tests common to dict and UserDict
-import unittest2 as unittest
+import unittest
 import UserDict
 import test_support
 

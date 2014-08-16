@@ -1,15 +1,11 @@
-# Expose only those structures defined in this file
-__all__ = ['Counter', 'deque', 'namedtuple', 'OrderedDict']
-
-#__all__ = ['Counter', 'deque', 'defaultdict', 'namedtuple', 'OrderedDict']
-## For bootstrapping reasons, the collection ABCs are defined in _abcoll.py.
-## They should however be considered an integral part of collections.py.
+__all__ = ['Counter', 'deque', 'defaultdict', 'namedtuple', 'OrderedDict']
+# For bootstrapping reasons, the collection ABCs are defined in _abcoll.py.
+# They should however be considered an integral part of collections.py.
 from _abcoll import *
-#import _abcoll
-#__all__ += _abcoll.__all__
+import _abcoll
+__all__ += _abcoll.__all__
 
-#from _collections import deque, defaultdict
-from collections import deque as _deque
+from _collections import deque, defaultdict
 from operator import itemgetter as _itemgetter, eq as _eq
 from keyword import iskeyword as _iskeyword
 import sys as _sys
@@ -21,11 +17,6 @@ try:
     from thread import get_ident as _get_ident
 except ImportError:
     from dummy_thread import get_ident as _get_ident
-
-
-if _sys.version_info >= (2, 7):
-    import warnings as _warnings
-    _warnings.warn('Use the stock collections modules instead.', DeprecationWarning)
 
 
 ################################################################################
@@ -709,27 +700,3 @@ if __name__ == '__main__':
     import doctest
     TestResults = namedtuple('TestResults', 'failed attempted')
     print TestResults(*doctest.testmod())
-
-
-########################################################################
-###  deque
-########################################################################
-
-class deque(_deque):
-    """Extension of deque to support Python 2.7's operations."""
-    def __init__(self, iterable=[], maxlen=None):
-        _deque.__init__(self, iterable, maxlen)
-        self._maxlen = maxlen
-
-    @property
-    def maxlen(self):
-        return self._maxlen
-
-    def reverse(self):
-        data = []
-        while self:
-            data.append(self.pop())
-        self.extend(data)
-
-    def count(self, value):
-        return sum(1 for element in self if element == value)

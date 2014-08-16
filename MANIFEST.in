@@ -1,0 +1,10 @@
+include backport_collections.py
+include test_collections.py
+include test_deque.py
+include test_support.py
+include mapping_tests.py
+include seq_tests.py
+include LICENSE
+include README.rst
+include setup.py
+include setup.cfg
