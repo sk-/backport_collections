@@ -30,6 +30,21 @@ Example::
     from backport_collections import OrderedDict
     from backport_collections import namedtuple
 
+Testing
+-------
+
+To run the tests, you need to install ``unittest2`` and ``nose``. Then run::
+
+    nosetests
+
+The tests depend on Python's own test suite, which is not always
+installed by default. In particular, Red Hat packages it separately as
+``python-test``, so you might need to run ::
+
+    sudo yum install python-test
+
+first.
+
 Known Issues
 ------------
 
